@@ -1,35 +1,36 @@
-import fs from 'fs';
-import path from 'path';
-import {promisify} from 'util';
-import test from 'ava';
-import isJpg from 'is-jpg';
-import decompressTarxz from '.';
+import fs from "fs";
+import test from "ava";
+import isJpg from "is-jpg";
+import decompressTarxz from "./index.js";
+import { join, filename } from "desm";
 
-const readFileP = promisify(fs.readFile);
+test("extract file", async (t) => {
+  const buf = await fs.promises.readFile(
+    join(import.meta.url, "fixture.tar.xz")
+  );
+  const files = await decompressTarxz()(buf);
 
-test('extract file', async t => {
-	const buf = await readFileP(path.join(__dirname, 'fixture.tar.xz'));
-	const files = await decompressTarxz()(buf);
-
-	t.is(files[0].path, 'test.jpg');
-	t.true(isJpg(files[0].data));
+  t.is(files[0].path, "test.jpg");
+  t.true(isJpg(files[0].data));
 });
 
-test('extract file using streams', async t => {
-	const stream = fs.createReadStream(path.join(__dirname, 'fixture.tar.xz'));
-	const files = await decompressTarxz()(stream);
+test("extract file using streams", async (t) => {
+  const stream = fs.createReadStream(join(import.meta.url, "fixture.tar.xz"));
+  const files = await decompressTarxz()(stream);
 
-	t.is(files[0].path, 'test.jpg');
-	t.true(isJpg(files[0].data));
+  t.is(files[0].path, "test.jpg");
+  t.true(isJpg(files[0].data));
 });
 
-test('return empty array if non-valid file is supplied', async t => {
-	const buf = await readFileP(__filename);
-	const files = await decompressTarxz()(buf);
+test("return empty array if non-valid file is supplied", async (t) => {
+  const buf = await fs.promises.readFile(filename(import.meta.url));
+  const files = await decompressTarxz()(buf);
 
-	t.is(files.length, 0);
+  t.is(files.length, 0);
 });
 
-test('throw on wrong input', async t => {
-	await t.throwsAsync(decompressTarxz()('foo'), 'Expected a Buffer or Stream, got string');
+test("throw on wrong input", async (t) => {
+  await t.throwsAsync(() => decompressTarxz()("foo"), {
+    message: "Expected a Buffer or Stream, got string",
+  });
 });
